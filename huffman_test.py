@@ -81,7 +81,7 @@ for i in range(2, 5):
     else:
         raise Exception('Incorrect decoding of huffman code for d ={}'.format(i))    
 
-# Compute entropies, empirical average length    h and average codeword lengths
+# Compute entropies, empirical average length and average codeword lengths
 for i in range(2, 5):
     for key in x_pmf:
          x_entropy += x_pmf[key] * (math.log(x_pmf[key]) / math.log(i))
