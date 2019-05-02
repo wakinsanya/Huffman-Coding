@@ -1,5 +1,6 @@
 import huffman
 import filecmp
+import math
 
 x_pmf = {
     'A': 0,
@@ -7,6 +8,20 @@ x_pmf = {
     'T': 0,
     'G': 0
 }
+
+x_entropy = 0
+
+def resolve_huffman_input(ensemble, d):
+    if not ((len(ensemble) - 1) / (d - 1) == int((len(ensemble) - 1) / (d - 1))):
+        resolved = False
+        i = 1
+        while(not resolved):
+            ensemble['k{}'.format(i)] = 0
+            if (len(ensemble) - 1) / (d - 1) == int((len(ensemble) - 1) / (d - 1)):
+                resolved = True
+                return ensemble
+    else:
+        return ensemble          
 
 # Read in Bacillus Subtilis bacterium genome and establish x_pmf
 with open('NC_000964.3.seq') as bsb_genome:
@@ -19,25 +34,27 @@ with open('NC_000964.3.seq') as bsb_genome:
     for key in x_pmf:
         x_pmf[key] = x_pmf[key] / dna_length
 
+    print('X pmf = {}\n'.format(x_pmf))   
+
 # Encode for D = 2, 3, 4
 for i in range(2, 5):
-    print('Encoding for D =', str(i))
-    huffman_code = huffman.huffman(x_pmf.copy(), i)
+    print('Encoding for d = {}\n'.format(i))
+    huffman_code = huffman.huffman(resolve_huffman_input(x_pmf.copy(), i), i)
     print(huffman_code)
-    with open('Encoded-D' + str(i) + '-NC_000964.3.seq', 'w') as encoding:
+    with open('Encoded-D{}-NC_000964.3.seq'.format(i), 'w') as encoding:
         with open('NC_000964.3.seq') as bsb_genome:
             for line in bsb_genome:
                   for c in line:
                       encoding.write(str(huffman_code[c]))
-    print('done')
+    print('done\n')
 
 # decode huffman codes
 for i in range(2, 5):
-    print('Decoding for D =', str(i))
-    huffman_code = huffman.huffman(x_pmf.copy(), i)
+    print('Decoding for d =', str(i))
+    huffman_code = huffman.huffman(resolve_huffman_input(x_pmf.copy(), i), i)
     huffman_decoder = dict(zip(huffman_code.values(), huffman_code.keys()))
-    with open('Decoded-D' + str(i) + '-NC_000964.3.seq', 'w') as decoding:
-        with open('Encoded-D' + str(i) + '-NC_000964.3.seq') as encoding:
+    with open('Decoded-D{}-NC_000964.3.seq'.format(i), 'w') as decoding:
+        with open('Encoded-D{}-NC_000964.3.seq'.format(i)) as encoding:
             buffer = []
             for line in encoding:
                 for c in line:
@@ -45,12 +62,30 @@ for i in range(2, 5):
                     if (''.join(buffer) in huffman_decoder.keys()):
                         decoding.write(huffman_decoder[''.join(buffer)])
                         buffer = []
-    print('done')
+    print('done\n')
 
 # verify the correctness the decoded huffman codes
 for i in range(2, 5):
-    print('Checking correctness of decoded huffman code for D = ', str(i))
-    if(filecmp.cmp('NC_000964.3.seq', 'Decoded-D' + str(i) + '-NC_000964.3.seq')):
-        print('done')
+    print('Checking correctness of decoded huffman code for d = {}'.format(i))
+    if(filecmp.cmp('NC_000964.3.seq', 'Decoded-D{}-NC_000964.3.seq'.format(i))):
+        print('done\n')
     else:
-        raise Exception('Incorrect decoding of huffman code for D = ', str(i))    
+        raise Exception('Incorrect decoding of huffman code for d ={}'.format(i))    
+
+# Compute entropies, empirical average length and average codeword lengths
+for i in range(2, 5):
+    for key in x_pmf:
+         x_entropy += x_pmf[key] * (math.log(x_pmf[key]) / math.log(i))
+
+    x_entropy = -1 * x_entropy    
+
+    print('H(X) = {} for d = {}'.format(x_entropy, i))
+    print('Calculating empirical average length of the huffman encoding for d = {}'.format(i))
+    huffman_code = huffman.huffman(resolve_huffman_input(x_pmf.copy(), i), i)
+    empirical_average_length = len(''.join(huffman_code.values())) / i
+    print('Empirical average length = {}\ndone'.format(empirical_average_length))
+    print('Determining average codeword length for the huffman encoding for d = {}'.format(i))
+    print('Average codeword length = {}'.format(len(''.join(huffman_code.values())) / len(huffman_code)))
+    print('done\n')
+    x_entropy = 0
+  
